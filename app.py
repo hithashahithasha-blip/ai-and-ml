@@ -1,35 +1,31 @@
 import streamlit as st
-import pandas as pd
-import joblib
+import tensorflow as tf
+import numpy as np
+from PIL import Image
 
-# Load model
-model=joblib.load("svm_model.pkl")
+st.set_page_config(page_title="Horse vs Kangaroo", page_icon="🦒")
 
-st.title("Titanic Survival Prediction using SVM")
+model = tf.keras.models.load_model("Horse_Kangaroo_classifier.keras")
 
-pclass=st.selectbox("Passenger Class",[1,2,3])
+class_names = ["Horse", "Kangaroo"]
 
-sex=st.selectbox("Sex",["male","female"])
+st.title("🐎 Horse vs 🦘 Kangaroo Classifier")
+st.write("Upload an image to predict whether it is a Horse or Kangaroo.")
 
-age=st.number_input("Age",0.0,100.0,25.0)
+uploaded_file = st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"])
 
-fare=st.number_input("Fare",0.0,600.0,50.0)
+if uploaded_file is not None:
 
-# Convert sex into number
-sex=0 if sex=="male" else 1
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Uploaded Image", width=300)
 
-if st.button("Predict"):
+    image = image.resize((150, 150))
+    img_array = np.array(image)
+    img_array = np.expand_dims(img_array, axis=0)
 
-    data=pd.DataFrame({
-        "Pclass":[pclass],
-        "Sex":[sex],
-        "Age":[age],
-        "Fare":[fare]
-    })
+    prediction = model.predict(img_array)
+    score = tf.nn.softmax(prediction[0])
 
-    prediction=model.predict(data)
-
-    if prediction[0]==1:
-        st.success("Passenger Survived")
-    else:
-        st.error("Passenger Did Not Survive")
+    st.subheader("Prediction Result")
+    st.success(f"Animal : {class_names[np.argmax(score)]}")
+    st.info(f"Confidence : {100*np.max(score):.2f}%")
